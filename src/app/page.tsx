@@ -267,13 +267,13 @@ export default function Home() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Link href="/generate">
-                <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-11">
+                <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-10">
                   Start Creating
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <Link href="#how-it-works">
-                <Button size="default" variant="outline" className="rounded-full px-8 h-11">
+                <Button size="default" variant="outline" className="rounded-full px-8 h-10">
                   See How It Works
                 </Button>
               </Link>
@@ -429,7 +429,7 @@ export default function Home() {
                   </ul>
                   <Link href="/generate">
                     <Button 
-                      className={`w-full rounded-full h-11 ${plan.popular ? 'bg-gradient-to-r from-primary to-purple-600' : ''}`}
+                      className={`w-full rounded-full h-10 ${plan.popular ? 'bg-gradient-to-r from-primary to-purple-600' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}
                     >
                       Get Started
@@ -501,7 +501,7 @@ export default function Home() {
               Join thousands of authors who have already published their books with BookGen
             </p>
             <Link href="/generate">
-              <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-11">
+              <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-10">
                 Start Creating for Free
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>

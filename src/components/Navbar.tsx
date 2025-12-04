@@ -46,7 +46,7 @@ export default function Navbar() {
               <Sparkles className="w-8 h-8 text-primary transition-transform group-hover:scale-110" />
               <div className="absolute inset-0 bg-primary/20 blur-xl group-hover:bg-primary/30 transition-all" />
             </div>
-            <span className="text-xl font-bold gradient-text">BookGen</span>
+            <span className="text-xl font-bold gradient-text">BookGen.ai</span>
           </Link>
 
           {/* Right Actions */}
@@ -56,12 +56,12 @@ export default function Navbar() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="rounded-full"
+                className="rounded-full w-9 h-9"
               >
                 {theme === "light" ? (
-                  <Moon className="w-5 h-5" />
+                  <Moon className="w-4 h-4" />
                 ) : (
-                  <Sun className="w-5 h-5" />
+                  <Sun className="w-4 h-4" />
                 )}
               </Button>
             )}
@@ -71,13 +71,13 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}
-                  className="rounded-full h-10 px-4"
+                  className="rounded-full h-9 px-4"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out
                 </Button>
                 <Link href="/generate">
-                  <Button className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 transition-opacity h-10 px-6">
+                  <Button className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 transition-opacity h-9 px-5">
                     Get Started
                   </Button>
                 </Link>
@@ -85,12 +85,12 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" className="rounded-full h-10 px-4">
+                  <Button variant="ghost" className="rounded-full h-9 px-4">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 transition-opacity h-10 px-6">
+                  <Button className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 transition-opacity h-9 px-5">
                     Get Started
                   </Button>
                 </Link>
