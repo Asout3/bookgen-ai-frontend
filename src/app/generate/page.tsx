@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,14 +40,14 @@ export default function GeneratePage() {
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
   const [generatedBook, setGeneratedBook] = useState<any>(null);
   const [bookData, setBookData] = useState({
     title: "",
     genre: "",
     audience: "",
     description: "",
-    chapters: 10,
-    wordsPerChapter: 2000,
+    bookLength: "mid" as "short" | "mid" | "long",
     tone: "",
     style: "",
   });
@@ -70,21 +69,11 @@ export default function GeneratePage() {
 
     setGenerating(true);
     setProgress(0);
-
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 500);
+    setProgressMessage("Initializing...");
 
     try {
       const token = localStorage.getItem("bearer_token");
-      const response = await fetch("/api/books/generate", {
+      const response = await fetch("/api/books/generate/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,45 +86,93 @@ export default function GeneratePage() {
           description: bookData.description,
           tone: bookData.tone,
           style: bookData.style,
-          chapters: bookData.chapters,
-          wordsPerChapter: bookData.wordsPerChapter,
+          bookLength: bookData.bookLength,
         }),
       });
 
-      clearInterval(progressInterval);
-
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to generate book");
+        throw new Error("Failed to start book generation");
       }
 
-      const book = await response.json();
-      setGeneratedBook(book);
-      setProgress(100);
-      toast.success("Book generated successfully!");
+      // Read the stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No reader available");
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.error) {
+              throw new Error(data.error);
+            }
+
+            if (data.progress !== undefined) {
+              setProgress(data.progress);
+              if (data.message) {
+                setProgressMessage(data.message);
+              }
+            }
+
+            if (data.book) {
+              setGeneratedBook(data.book);
+              toast.success("Book generated successfully!");
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Generation error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate book");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate book"
+      );
       setGenerating(false);
       setProgress(0);
-      clearInterval(progressInterval);
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedBook) return;
 
-    const content = JSON.stringify(generatedBook, null, 2);
-    const blob = new Blob([content], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${generatedBook.title.replace(/\s+/g, "-")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Book downloaded!");
+    try {
+      const token = localStorage.getItem("bearer_token");
+      const response = await fetch(`/api/books/${generatedBook.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch book content");
+      }
+
+      const book = await response.json();
+      const content = book.content || JSON.stringify(book, null, 2);
+      
+      const blob = new Blob([content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${generatedBook.title.replace(/\s+/g, "-")}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Book downloaded!");
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download book");
+    }
   };
 
   const genres = [
@@ -174,6 +211,12 @@ export default function GeneratePage() {
     "Persuasive",
     "Expository",
     "Creative",
+  ];
+
+  const bookLengths = [
+    { value: "short", label: "Short Book", chapters: 5, words: "~7,500 words", time: "5-10 min" },
+    { value: "mid", label: "Medium Book", chapters: 10, words: "~20,000 words", time: "10-20 min" },
+    { value: "long", label: "Long Book", chapters: 15, words: "~37,500 words", time: "20-30 min" },
   ];
 
   // Show loading state while checking authentication
@@ -359,83 +402,42 @@ export default function GeneratePage() {
                       </div>
                     </div>
 
-                    {/* Chapters Slider */}
+                    {/* Book Length Selection */}
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-lg font-semibold">
-                          Number of Chapters
-                        </Label>
-                        <span className="text-2xl font-bold gradient-text">
-                          {bookData.chapters}
-                        </span>
-                      </div>
-                      <Slider
-                        value={[bookData.chapters]}
-                        onValueChange={(value) =>
-                          setBookData({ ...bookData, chapters: value[0] })
-                        }
-                        min={5}
-                        max={30}
-                        step={1}
-                        className="py-4"
-                      />
-                    </div>
-
-                    {/* Words per Chapter Slider */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-lg font-semibold">
-                          Words per Chapter
-                        </Label>
-                        <span className="text-2xl font-bold gradient-text">
-                          {bookData.wordsPerChapter.toLocaleString()}
-                        </span>
-                      </div>
-                      <Slider
-                        value={[bookData.wordsPerChapter]}
-                        onValueChange={(value) =>
-                          setBookData({
-                            ...bookData,
-                            wordsPerChapter: value[0],
-                          })
-                        }
-                        min={500}
-                        max={5000}
-                        step={100}
-                        className="py-4"
-                      />
-                    </div>
-
-                    {/* Total Words Display */}
-                    <div className="glass-card rounded-2xl p-6 grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold gradient-text">
-                          {bookData.chapters}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Chapters
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold gradient-text">
-                          {(
-                            bookData.chapters * bookData.wordsPerChapter
-                          ).toLocaleString()}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Total Words
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold gradient-text">
-                          ~
-                          {Math.round(
-                            (bookData.chapters * bookData.wordsPerChapter) / 250
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Pages
-                        </div>
+                      <Label className="text-lg font-semibold">Book Length *</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {bookLengths.map((length) => (
+                          <button
+                            key={length.value}
+                            onClick={() => setBookData({ ...bookData, bookLength: length.value as "short" | "mid" | "long" })}
+                            className={`glass-card rounded-2xl p-6 text-left transition-all hover:shadow-lg ${
+                              bookData.bookLength === length.value
+                                ? "ring-2 ring-primary bg-primary/5"
+                                : ""
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h3 className="font-bold text-lg">{length.label}</h3>
+                              {bookData.bookLength === length.value && (
+                                <CheckCircle2 className="w-5 h-5 text-primary" />
+                              )}
+                            </div>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="w-4 h-4" />
+                                <span>{length.chapters} Chapters</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                <span>{length.words}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4" />
+                                <span>{length.time}</span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -528,18 +530,17 @@ export default function GeneratePage() {
                             Creating Your Book...
                           </h2>
                           <p className="text-muted-foreground">
-                            Our AI is crafting your masterpiece. This may take a few
-                            moments.
+                            {progressMessage || "Initializing..."}
                           </p>
                         </div>
 
                         {/* Progress Steps */}
                         <div className="space-y-4 text-left max-w-md mx-auto">
                           {[
-                            { label: "Analyzing your requirements", complete: progress > 20 },
-                            { label: "Generating chapter outlines", complete: progress > 40 },
-                            { label: "Writing content", complete: progress > 60 },
-                            { label: "Formatting and polishing", complete: progress > 80 },
+                            { label: "Setting up generation", threshold: 5 },
+                            { label: "Creating table of contents", threshold: 15 },
+                            { label: "Writing chapters", threshold: 85 },
+                            { label: "Finalizing your book", threshold: 95 },
                           ].map((item, index) => (
                             <motion.div
                               key={index}
@@ -548,14 +549,14 @@ export default function GeneratePage() {
                               transition={{ delay: index * 0.2 }}
                               className="flex items-center gap-3"
                             >
-                              {item.complete ? (
+                              {progress > item.threshold ? (
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                               ) : (
                                 <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
                               )}
                               <span
                                 className={
-                                  item.complete
+                                  progress > item.threshold
                                     ? "text-foreground"
                                     : "text-muted-foreground"
                                 }

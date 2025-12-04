@@ -1,25 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateBook, bookToMarkdown, type BookGenerationOptions } from '@/lib/bookgen-engine';
 import { db } from '@/db';
 import { books } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
+export const maxDuration = 300; // 5 minutes timeout for book generation
+
 export async function POST(request: NextRequest) {
   try {
-    // Authentication check
-    const session = await auth.api.getSession({ headers: await headers() });
-    
+    // Get session from auth
+    const session = await auth.api.getSession({
+      headers: await headers()
+    });
+
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Please sign in' },
         { status: 401 }
       );
     }
 
     const userId = session.user.id;
-
-    // Parse request body
     const body = await request.json();
+    
     const {
       title,
       genre,
@@ -27,101 +31,83 @@ export async function POST(request: NextRequest) {
       description,
       tone,
       style,
-      chapters,
-      wordsPerChapter
+      bookLength = 'mid' // short (5 chapters), mid (10 chapters), long (15 chapters)
     } = body;
 
-    // Security check: reject if userId provided in body
-    if ('userId' in body || 'user_id' in body) {
-      return NextResponse.json(
-        {
-          error: 'User ID cannot be provided in request body',
-          code: 'USER_ID_NOT_ALLOWED'
-        },
-        { status: 400 }
-      );
-    }
-
     // Validate required fields
-    if (
-      !title ||
-      !genre ||
-      !audience ||
-      !description ||
-      !tone ||
-      !style ||
-      chapters === undefined ||
-      wordsPerChapter === undefined
-    ) {
+    if (!title || !genre || !audience || !description || !tone || !style) {
       return NextResponse.json(
-        {
-          error: 'Missing required fields',
-          code: 'MISSING_FIELDS'
-        },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Validate numeric fields
-    const chaptersNum = parseInt(chapters);
-    const wordsPerChapterNum = parseInt(wordsPerChapter);
-
-    if (isNaN(chaptersNum) || isNaN(wordsPerChapterNum) || chaptersNum <= 0 || wordsPerChapterNum <= 0) {
+    // Validate book length
+    if (!['short', 'mid', 'long'].includes(bookLength)) {
       return NextResponse.json(
-        {
-          error: 'Chapters and wordsPerChapter must be positive numbers',
-          code: 'INVALID_NUMERIC_FIELDS'
-        },
+        { error: 'Invalid book length. Must be: short, mid, or long' },
         { status: 400 }
       );
     }
 
-    // Calculate total words
-    const totalWords = chaptersNum * wordsPerChapterNum;
+    // Generate the book with AI
+    const generatedBook = await generateBook({
+      title,
+      topic: description,
+      genre,
+      audience,
+      description,
+      tone,
+      style,
+      bookLength,
+    } as BookGenerationOptions);
 
-    // Generate mock book content
-    const mockChapters = Array.from({ length: chaptersNum }, (_, index) => ({
-      number: index + 1,
-      title: `Chapter ${index + 1}`,
-      content: `Mock content for chapter ${index + 1}. This is a placeholder chapter with approximately ${wordsPerChapterNum} words. The chapter explores themes related to ${genre} and is written in a ${tone} tone with ${style} style. This content is intended for ${audience} audience.`
-    }));
+    // Convert to markdown
+    const markdownContent = bookToMarkdown(generatedBook);
 
-    const content = JSON.stringify({ chapters: mockChapters });
+    // Calculate actual word count
+    const wordCount = markdownContent.split(/\s+/).length;
+    
+    // Determine chapter count based on book length
+    const chapterCount = generatedBook.metadata.totalChapters;
 
-    // Auto-generate timestamps
+    // Save to database
     const now = new Date().toISOString();
+    const [savedBook] = await db.insert(books).values({
+      userId,
+      title,
+      genre,
+      audience,
+      description,
+      tone,
+      style,
+      chapters: chapterCount,
+      wordsPerChapter: Math.round(wordCount / chapterCount),
+      totalWords: wordCount,
+      status: 'completed',
+      content: markdownContent,
+      coverUrl: null,
+      createdAt: now,
+      updatedAt: now,
+    }).returning();
 
-    // Insert book into database
-    const newBook = await db
-      .insert(books)
-      .values({
-        userId,
-        title: title.trim(),
-        genre: genre.trim(),
-        audience: audience.trim(),
-        description: description.trim(),
-        tone: tone.trim(),
-        style: style.trim(),
-        chapters: chaptersNum,
-        wordsPerChapter: wordsPerChapterNum,
-        totalWords,
-        status: 'completed',
-        content,
-        coverUrl: null,
-        createdAt: now,
-        updatedAt: now
-      })
-      .returning();
-
-    // Return created book
-    return NextResponse.json(newBook[0], { status: 201 });
+    return NextResponse.json({
+      id: savedBook.id,
+      title: savedBook.title,
+      genre: savedBook.genre,
+      audience: savedBook.audience,
+      description: savedBook.description,
+      chapters: savedBook.chapters,
+      totalWords: savedBook.totalWords,
+      status: savedBook.status,
+      createdAt: savedBook.createdAt,
+      content: markdownContent,
+    });
 
   } catch (error) {
-    console.error('POST error:', error);
+    console.error('Book generation error:', error);
     return NextResponse.json(
-      {
-        error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error')
-      },
+      { error: error instanceof Error ? error.message : 'Failed to generate book' },
       { status: 500 }
     );
   }
