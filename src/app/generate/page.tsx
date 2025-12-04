@@ -28,14 +28,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function GeneratePage() {
+  const { data: session, isPending: sessionLoading } = useSession();
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [generatedBook, setGeneratedBook] = useState<any>(null);
   const [bookData, setBookData] = useState({
     title: "",
     genre: "",
@@ -47,21 +53,89 @@ export default function GeneratePage() {
     style: "",
   });
 
-  const handleGenerate = () => {
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!sessionLoading && !session?.user) {
+      toast.error("Please sign in to generate books");
+      router.push("/login?redirect=/generate");
+    }
+  }, [session, sessionLoading, router]);
+
+  const handleGenerate = async () => {
+    if (!session?.user) {
+      toast.error("Please sign in to generate books");
+      router.push("/login?redirect=/generate");
+      return;
+    }
+
     setGenerating(true);
     setProgress(0);
 
     // Simulate progress
-    const interval = setInterval(() => {
+    const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setGenerating(false);
-          return 100;
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
         }
         return prev + 10;
       });
     }, 500);
+
+    try {
+      const token = localStorage.getItem("bearer_token");
+      const response = await fetch("/api/books/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: bookData.title,
+          genre: bookData.genre,
+          audience: bookData.audience,
+          description: bookData.description,
+          tone: bookData.tone,
+          style: bookData.style,
+          chapters: bookData.chapters,
+          wordsPerChapter: bookData.wordsPerChapter,
+        }),
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate book");
+      }
+
+      const book = await response.json();
+      setGeneratedBook(book);
+      setProgress(100);
+      toast.success("Book generated successfully!");
+    } catch (error) {
+      console.error("Generation error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate book");
+      setGenerating(false);
+      setProgress(0);
+      clearInterval(progressInterval);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!generatedBook) return;
+
+    const content = JSON.stringify(generatedBook, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${generatedBook.title.replace(/\s+/g, "-")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Book downloaded!");
   };
 
   const genres = [
@@ -101,6 +175,23 @@ export default function GeneratePage() {
     "Expository",
     "Creative",
   ];
+
+  // Show loading state while checking authentication
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+        <Navbar />
+        <div className="pt-32 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!session?.user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
@@ -485,36 +576,33 @@ export default function GeneratePage() {
                             Your Book is Ready!
                           </h2>
                           <p className="text-muted-foreground mb-8">
-                            Your book has been successfully generated and is ready for
-                            download.
+                            Your book has been successfully generated and saved to your library.
                           </p>
                         </div>
 
-                        {/* Book Preview Skeleton */}
-                        <div className="space-y-4 max-w-2xl mx-auto">
-                          <div className="glass-card rounded-2xl p-6 text-left">
-                            <h3 className="text-2xl font-bold mb-2">
-                              {bookData.title}
-                            </h3>
-                            <p className="text-muted-foreground mb-4">
-                              {bookData.genre} • {bookData.chapters} Chapters •{" "}
-                              {(
-                                bookData.chapters * bookData.wordsPerChapter
-                              ).toLocaleString()}{" "}
-                              words
-                            </p>
-                            <div className="space-y-2">
-                              <Skeleton className="h-4 w-full" />
-                              <Skeleton className="h-4 w-full" />
-                              <Skeleton className="h-4 w-3/4" />
+                        {/* Book Preview */}
+                        {generatedBook && (
+                          <div className="space-y-4 max-w-2xl mx-auto">
+                            <div className="glass-card rounded-2xl p-6 text-left">
+                              <h3 className="text-2xl font-bold mb-2">
+                                {generatedBook.title}
+                              </h3>
+                              <p className="text-muted-foreground mb-4">
+                                {generatedBook.genre} • {generatedBook.chapters} Chapters •{" "}
+                                {generatedBook.totalWords.toLocaleString()} words
+                              </p>
+                              <p className="text-sm text-muted-foreground line-clamp-3">
+                                {generatedBook.description}
+                              </p>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                           <Button
                             size="lg"
+                            onClick={handleDownload}
                             className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
                           >
                             <Download className="w-5 h-5 mr-2" />

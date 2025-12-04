@@ -11,6 +11,7 @@ import {
   Calendar,
   FileText,
   MoreVertical,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,79 +30,116 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+interface Book {
+  id: number;
+  title: string;
+  genre: string;
+  audience: string;
+  chapters: number;
+  totalWords: number;
+  createdAt: string;
+  status: string;
+  coverUrl: string | null;
+}
 
 export default function HistoryPage() {
+  const { data: session, isPending: sessionLoading } = useSession();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGenre, setFilterGenre] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<number | null>(null);
   const itemsPerPage = 6;
 
-  // Mock data - replace with actual API call
-  const books = [
-    {
-      id: 1,
-      title: "The Future of AI",
-      genre: "Technology",
-      chapters: 12,
-      words: 24000,
-      createdAt: "2024-01-15",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=600&fit=crop",
-    },
-    {
-      id: 2,
-      title: "Marketing Mastery",
-      genre: "Business",
-      chapters: 10,
-      words: 20000,
-      createdAt: "2024-01-10",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=600&fit=crop",
-    },
-    {
-      id: 3,
-      title: "Fantasy Adventures",
-      genre: "Fantasy",
-      chapters: 15,
-      words: 30000,
-      createdAt: "2024-01-05",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1618365908648-e71bd5716cba?w=400&h=600&fit=crop",
-    },
-    {
-      id: 4,
-      title: "Cooking Essentials",
-      genre: "Lifestyle",
-      chapters: 8,
-      words: 16000,
-      createdAt: "2024-01-03",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400&h=600&fit=crop",
-    },
-    {
-      id: 5,
-      title: "Thriller Night",
-      genre: "Thriller",
-      chapters: 20,
-      words: 40000,
-      createdAt: "2023-12-28",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
-    },
-    {
-      id: 6,
-      title: "Self-Help Guide",
-      genre: "Self-Help",
-      chapters: 10,
-      words: 20000,
-      createdAt: "2023-12-20",
-      status: "completed",
-      cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop",
-    },
-  ];
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!sessionLoading && !session?.user) {
+      toast.error("Please sign in to view your books");
+      router.push("/login?redirect=/history");
+    }
+  }, [session, sessionLoading, router]);
+
+  // Fetch books
+  useEffect(() => {
+    const fetchBooks = async () => {
+      if (!session?.user) return;
+
+      try {
+        const token = localStorage.getItem("bearer_token");
+        const response = await fetch("/api/books", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch books");
+        }
+
+        const data = await response.json();
+        setBooks(data);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error("Failed to load books");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session?.user) {
+      fetchBooks();
+    }
+  }, [session]);
+
+  const handleDelete = async (bookId: number) => {
+    if (!confirm("Are you sure you want to delete this book?")) return;
+
+    setDeleting(bookId);
+    try {
+      const token = localStorage.getItem("bearer_token");
+      const response = await fetch(`/api/books/${bookId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete book");
+      }
+
+      setBooks(books.filter((book) => book.id !== bookId));
+      toast.success("Book deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete book");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleDownload = (book: Book) => {
+    const content = JSON.stringify(book, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${book.title.replace(/\s+/g, "-")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Book downloaded!");
+  };
 
   // Filter and search logic
   const filteredBooks = books.filter((book) => {
@@ -115,7 +153,35 @@ export default function HistoryPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedBooks = filteredBooks.slice(startIndex, startIndex + itemsPerPage);
 
-  const genres = ["Technology", "Business", "Fantasy", "Lifestyle", "Thriller", "Self-Help"];
+  // Get unique genres from books
+  const genres = Array.from(new Set(books.map((book) => book.genre)));
+
+  // Cover image placeholders
+  const coverImages = [
+    "https://images.unsplash.com/photo-1589998059171-988d887df646?w=400&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1618365908648-e71bd5716cba?w=400&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=400&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&h=600&fit=crop",
+  ];
+
+  // Show loading state while checking authentication
+  if (sessionLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+        <Navbar />
+        <div className="pt-32 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!session?.user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
@@ -183,9 +249,13 @@ export default function HistoryPage() {
               className="text-center py-20"
             >
               <BookOpen className="w-20 h-20 mx-auto mb-6 text-muted-foreground" />
-              <h3 className="text-2xl font-bold mb-2">No books found</h3>
+              <h3 className="text-2xl font-bold mb-2">
+                {books.length === 0 ? "No books yet" : "No books found"}
+              </h3>
               <p className="text-muted-foreground mb-6">
-                Try adjusting your search or filters
+                {books.length === 0
+                  ? "Start creating your first book"
+                  : "Try adjusting your search or filters"}
               </p>
               <Link href="/generate">
                 <Button className="rounded-full bg-gradient-to-r from-primary to-purple-600">
@@ -207,7 +277,7 @@ export default function HistoryPage() {
                       {/* Book Cover */}
                       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-primary/20 to-purple-600/20">
                         <img
-                          src={book.cover}
+                          src={book.coverUrl || coverImages[index % coverImages.length]}
                           alt={book.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -226,17 +296,17 @@ export default function HistoryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Eye className="w-4 h-4 mr-2" />
-                                Preview
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownload(book)}>
                                 <Download className="w-4 h-4 mr-2" />
                                 Download
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDelete(book.id)}
+                                disabled={deleting === book.id}
+                              >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
+                                {deleting === book.id ? "Deleting..." : "Delete"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -267,7 +337,7 @@ export default function HistoryPage() {
                           </div>
                           <div>
                             <div className="text-muted-foreground">Words</div>
-                            <div className="font-semibold">{book.words.toLocaleString()}</div>
+                            <div className="font-semibold">{book.totalWords.toLocaleString()}</div>
                           </div>
                         </div>
 
@@ -282,12 +352,7 @@ export default function HistoryPage() {
                           <Button
                             variant="outline"
                             className="flex-1 rounded-full"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Preview
-                          </Button>
-                          <Button
-                            className="flex-1 rounded-full bg-gradient-to-r from-primary to-purple-600"
+                            onClick={() => handleDownload(book)}
                           >
                             <Download className="w-4 h-4 mr-2" />
                             Download

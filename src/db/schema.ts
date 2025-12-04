@@ -66,3 +66,23 @@ export const verification = sqliteTable("verification", {
     () => new Date(),
   ),
 });
+
+// Books table for BookGen application
+export const books = sqliteTable('books', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  genre: text('genre').notNull(),
+  audience: text('audience').notNull(),
+  description: text('description').notNull(),
+  tone: text('tone').notNull(),
+  style: text('style').notNull(),
+  chapters: integer('chapters').notNull(),
+  wordsPerChapter: integer('words_per_chapter').notNull(),
+  totalWords: integer('total_words').notNull(),
+  status: text('status').notNull().default('completed'),
+  content: text('content'),
+  coverUrl: text('cover_url'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
