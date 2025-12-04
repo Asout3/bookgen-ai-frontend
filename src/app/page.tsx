@@ -152,46 +152,32 @@ export default function Home() {
 
   const pricing = [
     {
-      name: "Starter",
-      price: "29",
-      description: "Perfect for trying out bookgen.ai",
+      name: "Free",
+      price: "0",
+      description: "Perfect for trying out BookGen",
       features: [
         "3 books per month",
-        "Up to 10,000 words",
+        "Up to 5,000 words",
         "PDF export",
-        "Basic support",
-        "Commercial license"
+        "Community support",
+        "Basic templates"
       ],
       popular: false
     },
     {
-      name: "Professional",
-      price: "79",
-      description: "For serious authors and publishers",
+      name: "Pro",
+      price: "20",
+      description: "For serious authors and creators",
       features: [
-        "15 books per month",
-        "Up to 50,000 words",
+        "Unlimited books",
+        "Up to 100,000 words",
         "All export formats",
         "Priority support",
         "Commercial license",
-        "Advanced customization"
+        "Advanced customization",
+        "API access"
       ],
       popular: true
-    },
-    {
-      name: "Enterprise",
-      price: "199",
-      description: "For teams and businesses",
-      features: [
-        "Unlimited books",
-        "Unlimited words",
-        "All export formats",
-        "24/7 dedicated support",
-        "Commercial license",
-        "API access",
-        "Custom training"
-      ],
-      popular: false
     }
   ];
 
@@ -281,13 +267,13 @@ export default function Home() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Link href="/generate">
-                <Button size="lg" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-lg px-8 h-14">
+                <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-11">
                   Start Creating
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <Link href="#how-it-works">
-                <Button size="lg" variant="outline" className="rounded-full text-lg px-8 h-14">
+                <Button size="default" variant="outline" className="rounded-full px-8 h-11">
                   See How It Works
                 </Button>
               </Link>
@@ -412,7 +398,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {pricing.map((plan, index) => (
               <motion.div
                 key={index}
@@ -443,7 +429,7 @@ export default function Home() {
                   </ul>
                   <Link href="/generate">
                     <Button 
-                      className={`w-full rounded-full ${plan.popular ? 'bg-gradient-to-r from-primary to-purple-600' : ''}`}
+                      className={`w-full rounded-full h-11 ${plan.popular ? 'bg-gradient-to-r from-primary to-purple-600' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}
                     >
                       Get Started
@@ -512,12 +498,12 @@ export default function Home() {
               Ready to Create Your Book?
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of authors who have already published their books with bookgen.ai
+              Join thousands of authors who have already published their books with BookGen
             </p>
             <Link href="/generate">
-              <Button size="lg" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-lg px-8 h-14">
+              <Button size="default" className="rounded-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 px-8 h-11">
                 Start Creating for Free
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
           </motion.div>
