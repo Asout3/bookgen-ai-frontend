@@ -246,16 +246,17 @@ export default function GeneratePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-4">
-              <Wand2 className="w-4 h-4 text-primary" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6 hover:shadow-lg transition-shadow">
+              <Wand2 className="w-4 h-4 text-primary animate-pulse" />
               <span className="text-sm font-medium">AI Book Generator</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Create Your <span className="gradient-text">Book</span>
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
               Fill in the details and let AI create your masterpiece
             </p>
           </motion.div>
@@ -268,11 +269,11 @@ export default function GeneratePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <Card className="glass-card rounded-3xl p-8 md:p-12">
+                <Card className="glass-card rounded-3xl p-8 md:p-12 shadow-xl">
                   <div className="space-y-8">
                     {/* Book Title */}
-                    <div className="space-y-2">
-                      <Label htmlFor="title" className="text-lg font-semibold">
+                    <div className="space-y-3">
+                      <Label htmlFor="title" className="text-lg font-bold">
                         Book Title *
                       </Label>
                       <Input
@@ -282,21 +283,21 @@ export default function GeneratePage() {
                         onChange={(e) =>
                           setBookData({ ...bookData, title: e.target.value })
                         }
-                        className="h-14 rounded-2xl text-lg"
+                        className="h-14 rounded-2xl text-lg focus:scale-[1.01] transition-transform"
                       />
                     </div>
 
                     {/* Genre & Audience */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-lg font-semibold">Genre *</Label>
+                      <div className="space-y-3">
+                        <Label className="text-lg font-bold">Genre *</Label>
                         <Select
                           value={bookData.genre}
                           onValueChange={(value) =>
                             setBookData({ ...bookData, genre: value })
                           }
                         >
-                          <SelectTrigger className="h-14 rounded-2xl text-lg">
+                          <SelectTrigger className="h-14 rounded-2xl text-lg hover:border-ring/50 transition-all">
                             <SelectValue placeholder="Select genre" />
                           </SelectTrigger>
                           <SelectContent>
@@ -309,8 +310,8 @@ export default function GeneratePage() {
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-lg font-semibold">
+                      <div className="space-y-3">
+                        <Label className="text-lg font-bold">
                           Target Audience *
                         </Label>
                         <Select
@@ -319,7 +320,7 @@ export default function GeneratePage() {
                             setBookData({ ...bookData, audience: value })
                           }
                         >
-                          <SelectTrigger className="h-14 rounded-2xl text-lg">
+                          <SelectTrigger className="h-14 rounded-2xl text-lg hover:border-ring/50 transition-all">
                             <SelectValue placeholder="Select audience" />
                           </SelectTrigger>
                           <SelectContent>
@@ -334,10 +335,10 @@ export default function GeneratePage() {
                     </div>
 
                     {/* Description */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Label
                         htmlFor="description"
-                        className="text-lg font-semibold"
+                        className="text-lg font-bold"
                       >
                         Book Description *
                       </Label>
@@ -351,21 +352,21 @@ export default function GeneratePage() {
                             description: e.target.value,
                           })
                         }
-                        className="min-h-[150px] rounded-2xl text-lg resize-none"
+                        className="min-h-[150px] rounded-2xl text-lg resize-none focus:scale-[1.01] transition-transform"
                       />
                     </div>
 
                     {/* Tone & Style */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-lg font-semibold">Tone *</Label>
+                      <div className="space-y-3">
+                        <Label className="text-lg font-bold">Tone *</Label>
                         <Select
                           value={bookData.tone}
                           onValueChange={(value) =>
                             setBookData({ ...bookData, tone: value })
                           }
                         >
-                          <SelectTrigger className="h-14 rounded-2xl text-lg">
+                          <SelectTrigger className="h-14 rounded-2xl text-lg hover:border-ring/50 transition-all">
                             <SelectValue placeholder="Select tone" />
                           </SelectTrigger>
                           <SelectContent>
@@ -378,8 +379,8 @@ export default function GeneratePage() {
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-lg font-semibold">
+                      <div className="space-y-3">
+                        <Label className="text-lg font-bold">
                           Writing Style *
                         </Label>
                         <Select
@@ -388,7 +389,7 @@ export default function GeneratePage() {
                             setBookData({ ...bookData, style: value })
                           }
                         >
-                          <SelectTrigger className="h-14 rounded-2xl text-lg">
+                          <SelectTrigger className="h-14 rounded-2xl text-lg hover:border-ring/50 transition-all">
                             <SelectValue placeholder="Select style" />
                           </SelectTrigger>
                           <SelectContent>
@@ -403,26 +404,26 @@ export default function GeneratePage() {
                     </div>
 
                     {/* Book Length Selection */}
-                    <div className="space-y-4">
-                      <Label className="text-lg font-semibold">Book Length *</Label>
+                    <div className="space-y-5">
+                      <Label className="text-lg font-bold">Book Length *</Label>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {bookLengths.map((length) => (
                           <button
                             key={length.value}
                             onClick={() => setBookData({ ...bookData, bookLength: length.value as "short" | "mid" | "long" })}
-                            className={`glass-card rounded-2xl p-6 text-left transition-all hover:shadow-lg ${
+                            className={`glass-card rounded-2xl p-6 text-left transition-all hover:shadow-xl hover:scale-105 ${
                               bookData.bookLength === length.value
-                                ? "ring-2 ring-primary bg-primary/5"
+                                ? "ring-2 ring-primary bg-primary/10 shadow-lg"
                                 : ""
                             }`}
                           >
-                            <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-start justify-between mb-3">
                               <h3 className="font-bold text-lg">{length.label}</h3>
                               {bookData.bookLength === length.value && (
-                                <CheckCircle2 className="w-5 h-5 text-primary" />
+                                <CheckCircle2 className="w-5 h-5 text-primary animate-pulse" />
                               )}
                             </div>
-                            <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="space-y-2 text-sm text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <BookOpen className="w-4 h-4" />
                                 <span>{length.chapters} Chapters</span>
@@ -453,7 +454,7 @@ export default function GeneratePage() {
                         !bookData.tone ||
                         !bookData.style
                       }
-                      className="w-full h-16 rounded-2xl text-lg bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 transition-opacity"
+                      className="w-full h-16 rounded-2xl text-lg font-semibold bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100"
                     >
                       <Wand2 className="w-6 h-6 mr-2" />
                       Generate My Book
@@ -468,14 +469,15 @@ export default function GeneratePage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
               >
-                <Card className="glass-card rounded-3xl p-8 md:p-12">
-                  <div className="text-center space-y-8">
+                <Card className="glass-card rounded-3xl p-8 md:p-12 shadow-2xl">
+                  <div className="text-center space-y-10">
                     {/* Progress Animation */}
                     <div className="relative">
-                      <div className="w-32 h-32 mx-auto relative">
+                      <div className="w-40 h-40 mx-auto relative">
                         <svg
-                          className="w-32 h-32 transform -rotate-90"
+                          className="w-40 h-40 transform -rotate-90"
                           viewBox="0 0 120 120"
                         >
                           <circle
@@ -484,8 +486,8 @@ export default function GeneratePage() {
                             r="54"
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="12"
-                            className="text-muted/30"
+                            strokeWidth="10"
+                            className="text-muted/20"
                           />
                           <motion.circle
                             cx="60"
@@ -493,14 +495,14 @@ export default function GeneratePage() {
                             r="54"
                             fill="none"
                             stroke="url(#gradient)"
-                            strokeWidth="12"
+                            strokeWidth="10"
                             strokeLinecap="round"
                             strokeDasharray={339.292}
                             initial={{ strokeDashoffset: 339.292 }}
                             animate={{
                               strokeDashoffset: 339.292 - (339.292 * progress) / 100,
                             }}
-                            transition={{ duration: 0.5 }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
                           />
                           <defs>
                             <linearGradient
@@ -516,7 +518,7 @@ export default function GeneratePage() {
                           </defs>
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-3xl font-bold gradient-text">
+                          <span className="text-4xl font-bold gradient-text">
                             {progress}%
                           </span>
                         </div>
@@ -526,10 +528,10 @@ export default function GeneratePage() {
                     {progress < 100 ? (
                       <>
                         <div>
-                          <h2 className="text-3xl font-bold mb-2">
+                          <h2 className="text-3xl md:text-4xl font-bold mb-3">
                             Creating Your Book...
                           </h2>
-                          <p className="text-muted-foreground">
+                          <p className="text-lg text-muted-foreground">
                             {progressMessage || "Initializing..."}
                           </p>
                         </div>
@@ -546,20 +548,20 @@ export default function GeneratePage() {
                               key={index}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.2 }}
-                              className="flex items-center gap-3"
+                              transition={{ delay: index * 0.2, ease: [0.4, 0, 0.2, 1] }}
+                              className="flex items-center gap-4 glass-card rounded-xl p-4"
                             >
                               {progress > item.threshold ? (
-                                <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
                               ) : (
-                                <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
+                                <Loader2 className="w-6 h-6 text-primary animate-spin flex-shrink-0" />
                               )}
                               <span
-                                className={
+                                className={`text-base font-medium ${
                                   progress > item.threshold
                                     ? "text-foreground"
                                     : "text-muted-foreground"
-                                }
+                                }`}
                               >
                                 {item.label}
                               </span>

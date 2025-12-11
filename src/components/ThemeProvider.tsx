@@ -27,9 +27,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
+    
+    // Add transition class to smooth theme change
+    document.documentElement.style.setProperty('transition', 'background-color 0.3s ease, color 0.3s ease');
+    
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
     document.documentElement.classList.toggle("dark", newTheme === "dark");
+    
+    // Remove transition after it's done
+    setTimeout(() => {
+      document.documentElement.style.removeProperty('transition');
+    }, 300);
   };
 
   return (
