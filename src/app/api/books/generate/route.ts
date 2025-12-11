@@ -87,6 +87,10 @@ export async function POST(request: NextRequest) {
       status: 'completed',
       content: markdownContent,
       coverUrl: null,
+      authorName: session.user.name || session.user.email,
+      isPublic: false, // Default to private
+      downloadCount: 0,
+      viewCount: 0,
       createdAt: now,
       updatedAt: now,
     }).returning();

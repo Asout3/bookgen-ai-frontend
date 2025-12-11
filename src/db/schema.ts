@@ -83,6 +83,10 @@ export const books = sqliteTable('books', {
   status: text('status').notNull().default('completed'),
   content: text('content'),
   coverUrl: text('cover_url'),
+  authorName: text('author_name'),
+  isPublic: integer('is_public', { mode: 'boolean' }).default(false),
+  downloadCount: integer('download_count').default(0),
+  viewCount: integer('view_count').default(0),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

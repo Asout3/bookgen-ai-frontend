@@ -12,6 +12,9 @@ import {
   FileText,
   MoreVertical,
   Loader2,
+  Share2,
+  Globe,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,6 +50,10 @@ interface Book {
   createdAt: string;
   status: string;
   coverUrl: string | null;
+  authorName?: string;
+  isPublic: boolean;
+  downloadCount: number;
+  viewCount: number;
 }
 
 export default function HistoryPage() {
@@ -139,6 +146,52 @@ export default function HistoryPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Book downloaded!");
+  };
+
+  const handleShare = async (book: Book) => {
+    try {
+      // Toggle book to public if not already public
+      const token = localStorage.getItem("bearer_token");
+      const response = await fetch(`/api/books/${book.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isPublic: !book.isPublic }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update book privacy");
+      }
+
+      // Update local state
+      setBooks(books.map(b => 
+        b.id === book.id ? { ...b, isPublic: !b.isPublic } : b
+      ));
+
+      // Show sharing link if book is now public
+      if (!book.isPublic) {
+        const shareUrl = `${window.location.origin}/share/${book.id}`;
+        
+        if (navigator.share) {
+          await navigator.share({
+            title: book.title,
+            text: `Check out my book "${book.title}"`,
+            url: shareUrl
+          });
+        } else {
+          // Fallback to clipboard
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Share link copied to clipboard!");
+        }
+      } else {
+        toast.success("Book made private");
+      }
+    } catch (error) {
+      console.error("Share error:", error);
+      toast.error("Failed to share book");
+    }
   };
 
   // Filter and search logic
@@ -300,6 +353,10 @@ export default function HistoryPage() {
                                 <Download className="w-4 h-4 mr-2" />
                                 Download
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleShare(book)}>
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Share
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => handleDelete(book.id)}
@@ -313,9 +370,17 @@ export default function HistoryPage() {
                         </div>
 
                         {/* Status Badge */}
-                        <div className="absolute top-4 left-4">
+                        <div className="absolute top-4 left-4 flex gap-2">
                           <Badge className="bg-green-500/90 text-white border-0">
                             {book.status}
+                          </Badge>
+                          <Badge variant="outline" className="glass-card border-white/30">
+                            {book.isPublic ? (
+                              <Globe className="w-3 h-3 mr-1" />
+                            ) : (
+                              <Lock className="w-3 h-3 mr-1" />
+                            )}
+                            {book.isPublic ? "Public" : "Private"}
                           </Badge>
                         </div>
                       </div>
