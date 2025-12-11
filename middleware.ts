@@ -4,11 +4,17 @@ import { auth } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
+  const pathname = request.nextUrl.pathname;
   
-  // Allow access to login page
-  if (request.nextUrl.pathname === "/login") {
-    // If already logged in, redirect to home
-    if (session?.user) {
+  // Allow access to public routes
+  const publicRoutes = ["/login", "/auth", "/share"];
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route)) || 
+                       pathname === "/" ||
+                       pathname.startsWith("/api/");
+  
+  if (isPublicRoute) {
+    // Redirect to home if logged in and trying to access login
+    if (pathname === "/login" && session?.user) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();
@@ -16,12 +22,12 @@ export async function middleware(request: NextRequest) {
   
   // Protect all other routes
   if (!session?.user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL(`/login?redirect=${encodeURIComponent(pathname)}`, request.url));
   }
   
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/", "/generate", "/history", "/auth"],
+  matcher: ["/((?!.*\\.).*)"],
 };

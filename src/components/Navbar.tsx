@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Button } from "./ui/button";
-import { Moon, Sun, Sparkles, LogOut } from "lucide-react";
+import { Moon, Sun, Sparkles, LogOut, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { authClient, useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
@@ -68,6 +68,12 @@ export default function Navbar() {
 
             {!isPending && session?.user ? (
               <>
+                <Link href="/settings">
+                  <Button variant="ghost" className="rounded-full h-9 px-4">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   onClick={handleSignOut}
