@@ -25,7 +25,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated blurry background */}
-      <div className="absolute inset-0 -z-10">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
         <motion.div
           animate={{
             x: [0, 100, 0],
@@ -34,9 +35,9 @@ export default function LoginPage() {
           transition={{
             duration: 20,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-3xl"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-[100px] will-change-transform"
         />
         <motion.div
           animate={{
@@ -46,9 +47,9 @@ export default function LoginPage() {
           transition={{
             duration: 25,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-[100px] will-change-transform"
         />
         <motion.div
           animate={{
@@ -58,26 +59,26 @@ export default function LoginPage() {
           transition={{
             duration: 15,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
-          className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"
+          className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-[100px] will-change-transform"
         />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
         className="w-full max-w-md"
       >
-        <Card className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 mb-6">
-              <Sparkles className="w-10 h-10 text-primary" />
-              <span className="text-2xl font-bold gradient-text">bookgen.ai</span>
+        <Card className="glass-card rounded-3xl p-10 md:p-12 shadow-2xl">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 mb-8">
+              <Sparkles className="w-12 h-12 text-primary animate-pulse" />
+              <span className="text-3xl font-bold gradient-text">BookGen.ai</span>
             </div>
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
+            <p className="text-lg text-muted-foreground leading-relaxed">
               Sign in to continue creating amazing books
             </p>
           </div>
@@ -85,9 +86,9 @@ export default function LoginPage() {
           <Button
             onClick={handleGoogleSignIn}
             size="lg"
-            className="w-full rounded-full h-14 text-lg bg-white dark:bg-white text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 border border-gray-200"
+            className="w-full rounded-full h-16 text-lg font-semibold bg-white dark:bg-white text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100 border-2 border-gray-200 hover:border-gray-300 hover:scale-[1.02] hover:shadow-xl transition-all"
           >
-            <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -108,7 +109,7 @@ export default function LoginPage() {
             Continue with Google
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-sm text-muted-foreground mt-8">
             By continuing, you agree to our Terms of Service and Privacy Policy
           </p>
         </Card>
